@@ -2,573 +2,936 @@
 <html lang="es" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor Web Multi-Formato PRO</title>
-    
-    <!-- Configuración de Tailwind para Modo Oscuro por clase -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Editor Web Multi-Formato PRO | Versión Premium</title>
+
+    <!-- Tailwind CSS v3 CDN (Estable y 100% compatible con darkMode 'class' en un solo archivo) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: { extend: {} }
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
         }
     </script>
 
-    <!-- FontAwesome para iconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Librerías para PDF, Markdown y Emojis -->
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Librerías -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
-    <!-- Plugin GFM para Turndown (necesario para convertir tablas HTML a Markdown) -->
     <script src="https://unpkg.com/turndown-plugin-gfm/dist/turndown-plugin-gfm.js"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
 
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
-        /* Estilos específicos para que el editor parezca una hoja de papel */
+        body { font-family: 'Inter', sans-serif; }
+
+        /* ===== EDITOR ESTILO PAPEL ADAPTATIVO ===== */
         #editor-container {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            min-height: 297mm; /* Altura aproximada A4 */
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.05);
+            min-height: 297mm;
             width: 100%;
-            max-width: 210mm; /* Ancho máximo A4 */
+            max-width: 210mm;
             margin: 0 auto;
-            transition: background-color 0.3s, color 0.3s;
+            transition: all 0.3s ease;
         }
-        
-        #editor-rich:focus, #editor-md:focus {
-            outline: none;
+        @media (max-width: 768px) {
+            #editor-container {
+                max-width: 100%;
+                min-height: 60vh;
+                padding: 16px !important;
+                border-radius: 0;
+                box-shadow: none;
+            }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #editor-container { max-width: 95%; }
         }
 
-        /* Estilos base dentro del editor rico para que el HTML luzca bien */
-        #editor-rich h1 { font-size: 2em; font-weight: bold; margin-bottom: 0.5em; }
-        #editor-rich h2 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; }
-        #editor-rich p { margin-bottom: 1em; }
-        #editor-rich ul { list-style-type: disc; margin-left: 2em; margin-bottom: 1em; }
-        #editor-rich ol { list-style-type: decimal; margin-left: 2em; margin-bottom: 1em; }
-        #editor-rich blockquote { border-left: 4px solid #ccc; padding-left: 1em; color: #666; font-style: italic; }
-        #editor-rich a { color: #2563eb; text-decoration: underline; }
+        #editor-rich:focus, #editor-md:focus { outline: none; }
+
+        /* ===== ESTILOS ENRIQUECIDOS RESPONSIVOS ===== */
+        #editor-rich h1 { font-size: clamp(1.5rem, 4vw, 2.25rem); font-weight: 800; margin-top: 1.5rem; margin-bottom: 0.75rem; line-height: 1.2; letter-spacing: -0.025em; }
+        #editor-rich h2 { font-size: clamp(1.25rem, 3vw, 1.75rem); font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; line-height: 1.3; }
+        #editor-rich h3 { font-size: clamp(1.1rem, 2.5vw, 1.25rem); font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; }
+        #editor-rich p { margin-bottom: 1.25rem; line-height: 1.7; }
+        #editor-rich ul, #editor-rich ol { margin-left: clamp(1rem, 3vw, 2rem); margin-bottom: 1.25rem; list-style-position: inside; }
+        #editor-rich ul { list-style-type: disc; }
+        #editor-rich ol { list-style-type: decimal; }
+        #editor-rich li { margin-bottom: 0.5rem; }
+        #editor-rich blockquote { border-left: 4px solid #3b82f6; padding-left: 1.25rem; color: #4b5563; font-style: italic; margin: 1.5rem 0; background: #f3f4f6; padding: 1rem; border-radius: 0 0.5rem 0.5rem 0; }
+        html.dark #editor-rich blockquote { background: #1f2937; color: #d1d5db; border-left-color: #60a5fa; }
+        #editor-rich a { color: #2563eb; text-decoration: underline; font-weight: 500; }
         html.dark #editor-rich a { color: #60a5fa; }
-        
-        /* Estilos para Tablas dentro del editor */
-        #editor-rich table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
-        #editor-rich th, #editor-rich td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
-        #editor-rich th { background-color: #f3f4f6; font-weight: bold; }
-        html.dark #editor-rich th { background-color: #374151; }
-        html.dark #editor-rich th, html.dark #editor-rich td { border-color: #4b5563; }
 
-        /* Contenedor redimensionable para imágenes */
+        /* Tablas responsivas */
+        #editor-rich table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: block; overflow-x: auto; }
+        #editor-rich th, #editor-rich td { border: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: left; white-space: nowrap; }
+        @media (max-width: 640px) {
+            #editor-rich th, #editor-rich td { padding: 0.5rem; font-size: 0.8rem; }
+        }
+        #editor-rich th { background-color: #f9fafb; font-weight: 600; }
+        html.dark #editor-rich th { background: #1f2937; color: #f3f4f6; border-color: #374151; }
+        html.dark #editor-rich td { border-color: #374151; }
+
+        /* Imágenes redimensionables */
         .resizable-image-wrapper {
-            resize: both;
-            overflow: hidden;
-            display: inline-block;
-            max-width: 100%;
-            min-width: 50px;
-            min-height: 50px;
-            border: 2px dashed transparent;
-            margin: 10px 0;
-            padding: 2px;
-            transition: border-color 0.2s;
+            resize: both; overflow: hidden; display: inline-block;
+            max-width: 100%; min-width: 80px; min-height: 80px;
+            border: 2px dashed #94a3b8; margin: 1rem 0; padding: 4px;
+            border-radius: 0.5rem; transition: border-color 0.2s;
         }
-        .resizable-image-wrapper:hover, .resizable-image-wrapper:active {
-            border-color: #3b82f6; 
-        }
-        .resizable-image-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-            pointer-events: none; 
+        .resizable-image-wrapper:hover { border-color: #3b82f6; }
+        .resizable-image-wrapper img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; border-radius: 0.25rem; }
+
+        /* Salto de página */
+        .html2pdf__page-break { height: 0; page-break-before: always; margin: 35px 0; border-top: 2px dashed #cbd5e1; position: relative; display: block; }
+        .html2pdf__page-break::after { content: '✂️ --- SALTO DE PÁGINA --- ✂️'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: inherit; padding: 0 15px; color: #64748b; font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+        /* Emoji picker */
+        emoji-picker { width: 100%; height: 350px; border-radius: 0.5rem; }
+        @media (max-width: 480px) { emoji-picker { height: 280px; } }
+        html.dark emoji-picker { --background: #1f2937; --border-color: #374151; --color: #f3f4f6; }
+        html.light emoji-picker { --background: #ffffff; --color: #1f2937; }
+
+        /* Corrección del picker en móviles para que no se salga de pantalla */
+        @media (max-width: 768px) {
+            #emoji-picker-container {
+                position: fixed;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%);
+                margin-top: 0;
+                width: 90vw;
+                max-width: 350px;
+                z-index: 100;
+            }
         }
 
-        /* Indicador visual de salto de página */
-        .html2pdf__page-break {
-            height: 0;
-            page-break-before: always;
-            margin: 30px 0;
-            border-top: 2px dashed #94a3b8;
-            position: relative;
-            display: block;
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* Animación dictado */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239,68,68,0); }
         }
-        .html2pdf__page-break::after {
-            content: '--- Salto de Página (PDF) ---';
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: inherit;
-            padding: 0 10px;
-            color: #94a3b8;
-            font-size: 12px;
-            font-family: monospace;
+        .recording-active { animation: pulse-ring 1.5s infinite; }
+
+        /* ===== UTILIDADES RESPONSIVAS ===== */
+        .toolbar-scroll {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .toolbar-scroll::-webkit-scrollbar { display: none; }
+
+        .sidebar-overlay {
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(2px);
         }
 
-        /* Ajuste de estilos para el componente del emoji picker */
-        emoji-picker {
-            width: 100%;
-            max-width: 320px;
-            height: 350px;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
+        .app-title { font-size: clamp(0.875rem, 2.5vw, 1.125rem); }
+        .app-subtitle { font-size: clamp(0.6rem, 1.5vw, 0.75rem); }
+
+        @media (max-width: 768px) {
+            .touch-btn { min-width: 44px; min-height: 44px; }
         }
-        
-        html.dark emoji-picker {
-            --background: #1f2937;
-            --border-color: #374151;
-            --color: #f3f4f6;
+
+        /* Split view adaptativo */
+        @media (max-width: 768px) {
+            .split-editor { width: 100% !important; border: none !important; border-bottom: 2px solid #e2e8f0 !important; min-height: 40vh; }
+            .split-preview { width: 100% !important; border: none !important; min-height: 40vh; }
+            .split-view-container { flex-direction: column !important; }
         }
-        html.light emoji-picker {
-            --background: #ffffff;
-            --color: #1f2937;
+
+        /* Zen mode */
+        body.zen-mode header, body.zen-mode #main-toolbar, body.zen-mode #left-sidebar, body.zen-mode footer, body.zen-mode .sidebar-overlay-mobile {
+            display: none !important;
         }
+        body.zen-mode #scroll-area { padding: 0 !important; }
+        body.zen-mode #editor-container { max-width: 100%; box-shadow: none; min-height: 100vh; border-radius: 0; }
+        @media (min-width: 769px) {
+            body.zen-mode #editor-container { max-width: 210mm; margin: 0 auto; padding: 4rem; }
+        }
+        body.zen-mode .zen-exit-btn { display: flex !important; }
+        .zen-exit-btn { display: none !important; }
+
+        #toast { max-width: calc(100vw - 2rem); }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 flex flex-col h-screen overflow-hidden text-gray-800 dark:text-gray-200 transition-colors duration-300 relative">
+<body class="bg-slate-50 dark:bg-slate-950 flex flex-col h-screen overflow-hidden text-slate-800 dark:text-slate-200 transition-colors duration-300 relative">
 
-    <!-- Notificaciones Toast -->
-    <div id="toast" class="fixed bottom-12 right-4 bg-gray-800 dark:bg-gray-700 text-white px-4 py-3 rounded shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
-        <i class="fas fa-info-circle text-blue-400"></i>
-        <span id="toast-msg">Mensaje</span>
+    <!-- ===== TOAST DE NOTIFICACIONES ===== -->
+    <div id="toast" class="fixed bottom-6 right-6 left-6 sm:left-auto sm:w-auto bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-sm text-white px-4 py-3 sm:px-5 sm:py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none z-[100] flex items-center gap-3 border-l-4 border-blue-500">
+        <i class="fas fa-info-circle text-blue-400 text-lg flex-shrink-0"></i>
+        <span id="toast-msg" class="font-medium text-sm leading-tight">Mensaje</span>
     </div>
 
-    <!-- Barra de herramientas superior (Sticky) -->
-    <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 p-2 flex flex-wrap gap-2 items-center justify-between shrink-0 z-40 shadow-sm transition-colors duration-300">
+    <!-- ===== BOTÓN SALIR ZEN MODE ===== -->
+    <button onclick="toggleZenMode()" class="zen-exit-btn fixed top-4 right-4 z-[90] bg-slate-800/80 dark:bg-slate-200/80 backdrop-blur-sm text-white dark:text-slate-900 px-3 py-2 rounded-lg text-xs font-semibold items-center gap-2 hover:bg-slate-700 dark:hover:bg-slate-300 transition-all shadow-lg">
+        <i class="fas fa-compress"></i> <span class="hidden sm:inline">Salir Enfoque</span> <span class="sm:hidden">Salir</span>
+    </button>
+
+    <!-- ===== HEADER PRINCIPAL ===== -->
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2 sm:gap-4 z-40 shadow-sm shrink-0 transition-colors duration-300" id="main-header">
         
-        <!-- Botón menú móvil -->
-        <button onclick="toggleMobileMenu()" class="md:hidden px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-200 font-medium flex items-center gap-2">
-            <i class="fas fa-bars"></i>
-        </button>
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-none">
+            <!-- Botones móviles -->
+            <button onclick="toggleMobileSidebar()" class="touch-btn lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 flex-shrink-0" title="Menú lateral">
+                <i class="fas fa-bars text-lg"></i>
+            </button>
+            <button onclick="toggleMobileToolbar()" class="touch-btn p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 flex-shrink-0 sm:hidden" title="Herramientas">
+                <i class="fas fa-palette text-lg"></i>
+            </button>
 
-        <!-- Herramientas de texto -->
-        <div class="hidden md:flex flex-wrap gap-1 items-center bg-white dark:bg-gray-800 md:bg-gray-50 md:dark:bg-gray-900 p-2 md:p-1 rounded-b-lg md:rounded border-x border-b md:border border-gray-200 dark:border-gray-700 absolute md:static top-full left-0 w-full md:w-auto shadow-xl md:shadow-none transition-colors" id="text-tools">
-            
-            <!-- Historial -->
-            <button onclick="formatDoc('undo')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Deshacer (Ctrl+Z)"><i class="fas fa-undo"></i></button>
-            <button onclick="formatDoc('redo')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Rehacer (Ctrl+Y)"><i class="fas fa-redo"></i></button>
-            
-            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
+            <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-1.5 sm:p-2 rounded-lg shadow-md flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-pen-fancy text-sm sm:text-xl"></i>
+            </div>
+            <div class="min-w-0">
+                <h1 class="app-title font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent leading-tight truncate">Editor Web PRO</h1>
+                <p class="app-subtitle text-slate-500 dark:text-slate-400 hidden sm:block">Multi-Formato • Markdown • Voz • PDF</p>
+            </div>
+        </div>
 
-            <!-- Formato básico -->
-            <button onclick="formatDoc('bold')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Negrita (Ctrl+B)"><i class="fas fa-bold"></i></button>
-            <button onclick="formatDoc('italic')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Cursiva (Ctrl+I)"><i class="fas fa-italic"></i></button>
-            <button onclick="formatDoc('underline')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Subrayado (Ctrl+U)"><i class="fas fa-underline"></i></button>
-            
-            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
-            
-            <!-- Estructura y Enlaces -->
-            <button onclick="formatDoc('formatBlock', 'H1')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-bold" title="Título 1">H1</button>
-            <button onclick="formatDoc('formatBlock', 'H2')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-bold" title="Título 2">H2</button>
-            <button onclick="insertLink()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Insertar Enlace"><i class="fas fa-link"></i></button>
-            
-            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
-            
-            <!-- Alineación y Listas -->
-            <button onclick="formatDoc('justifyLeft')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Alinear a la Izquierda"><i class="fas fa-align-left"></i></button>
-            <button onclick="formatDoc('justifyCenter')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Centrar"><i class="fas fa-align-center"></i></button>
-            <button onclick="formatDoc('insertUnorderedList')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Lista viñetas"><i class="fas fa-list-ul"></i></button>
-            
-            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <select id="template-selector" onchange="loadSelectedTemplate()" class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 sm:px-3 py-2 text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer max-w-[100px] sm:max-w-none truncate">
+                <option value="blank">✨ Plantilla</option>
+                <option value="cv">📄 CV</option>
+                <option value="notes">📝 Notas</option>
+                <option value="readme">💻 README</option>
+                <option value="letter">✉️ Carta</option>
+            </select>
 
-            <!-- Tablas e Inserciones -->
-            <button onclick="insertTable()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Insertar Tabla (2x2)"><i class="fas fa-table"></i></button>
-            <button onclick="insertPageBreak()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Insertar Salto de Página (Para PDF)"><i class="fas fa-file-dashed-line text-sm"></i><i class="fas fa-scissors"></i></button>
-
-            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
-
-            <!-- Selector de Emojis -->
-            <div class="relative inline-block w-full md:w-auto text-center md:text-left" id="emoji-wrapper">
-                <button onclick="toggleEmojiPicker()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300 w-full md:w-auto flex items-center justify-center" title="Insertar Emoji">
-                    <i class="far fa-smile"></i> <span class="md:hidden ml-2">Insertar Emoji</span>
+            <div class="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                <button onclick="switchViewMode('visual')" id="btn-view-visual" class="touch-btn px-2 sm:px-3 py-1.5 bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 rounded-md font-semibold text-[10px] sm:text-xs shadow-sm transition-all whitespace-nowrap">
+                    <i class="fas fa-eye mr-1"></i><span class="hidden sm:inline">Visual</span>
                 </button>
-                <div id="emoji-picker-container" class="hidden absolute top-full md:left-0 right-0 md:right-auto mt-1 z-50 shadow-2xl rounded-lg bg-white dark:bg-gray-800 p-2">
+                <button onclick="switchViewMode('markdown')" id="btn-view-markdown" class="touch-btn px-2 sm:px-3 py-1.5 text-slate-600 dark:text-slate-400 rounded-md font-semibold text-[10px] sm:text-xs hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">
+                    <i class="fas fa-code mr-1"></i><span class="hidden sm:inline">MD</span>
+                </button>
+                <button onclick="switchViewMode('split')" id="btn-view-split" class="touch-btn px-2 sm:px-3 py-1.5 text-slate-600 dark:text-slate-400 rounded-md font-semibold text-[10px] sm:text-xs hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap hidden md:block">
+                    <i class="fas fa-columns mr-1"></i><span class="hidden sm:inline">Split</span>
+                </button>
+            </div>
+
+            <button onclick="toggleZenMode()" id="btn-zen" class="touch-btn hidden sm:flex p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors" title="Modo Enfoque">
+                <i class="fas fa-expand text-xs sm:text-sm"></i>
+            </button>
+            <button onclick="toggleTheme()" class="touch-btn p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors" title="Tema">
+                <i class="fas fa-moon text-xs sm:text-sm dark:hidden"></i>
+                <i class="fas fa-sun text-xs sm:text-sm hidden dark:inline"></i>
+            </button>
+            <button onclick="createNewDocument()" class="touch-btn px-2 sm:px-3 py-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 border border-red-200 dark:border-red-800 rounded-lg text-[10px] sm:text-xs font-semibold flex items-center gap-1 transition-colors">
+                <i class="fas fa-trash-alt text-[10px]"></i><span class="hidden lg:inline">Limpiar</span>
+            </button>
+
+            <!-- Exportar (solo escritorio) -->
+            <div class="hidden sm:flex gap-1 ml-1 pl-2 border-l border-slate-200 dark:border-slate-700">
+                <button onclick="downloadMD()" class="touch-btn px-2 sm:px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition-colors">
+                    <i class="fas fa-file-code text-indigo-500"></i><span>.MD</span>
+                </button>
+                <button onclick="exportPDF()" class="touch-btn px-3 sm:px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-lg text-[10px] sm:text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-red-500/20 transition-all">
+                    <i class="fas fa-file-pdf"></i><span>PDF</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== BARRA DE HERRAMIENTAS ===== -->
+    <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 shadow-sm shrink-0 transition-all duration-300" id="main-toolbar">
+        <div class="toolbar-scroll flex items-center gap-0.5 px-3 py-1.5 sm:px-4 sm:py-2 overflow-x-auto">
+            <button onclick="formatDoc('undo')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Deshacer"><i class="fas fa-undo text-xs sm:text-sm"></i></button>
+            <button onclick="formatDoc('redo')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Rehacer"><i class="fas fa-redo text-xs sm:text-sm"></i></button>
+            <span class="w-px h-4 sm:h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 sm:mx-1 flex-shrink-0"></span>
+            
+            <button onclick="formatDoc('bold')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 font-bold flex-shrink-0" title="Negrita"><i class="fas fa-bold text-xs sm:text-sm"></i></button>
+            <button onclick="formatDoc('italic')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 italic flex-shrink-0" title="Cursiva"><i class="fas fa-italic text-xs sm:text-sm"></i></button>
+            <button onclick="formatDoc('underline')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 underline flex-shrink-0" title="Subrayado"><i class="fas fa-underline text-xs sm:text-sm"></i></button>
+            <button onclick="formatDoc('strikeThrough')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Tachado"><i class="fas fa-strikethrough text-xs sm:text-sm"></i></button>
+            <span class="w-px h-4 sm:h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 sm:mx-1 flex-shrink-0"></span>
+            
+            <button onclick="formatDoc('formatBlock','H1')" class="touch-btn px-1.5 py-1 sm:px-2 sm:py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-700 dark:text-slate-300 font-extrabold text-[10px] sm:text-sm flex-shrink-0" title="H1">H1</button>
+            <button onclick="formatDoc('formatBlock','H2')" class="touch-btn px-1.5 py-1 sm:px-2 sm:py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-700 dark:text-slate-300 font-bold text-[10px] sm:text-sm flex-shrink-0" title="H2">H2</button>
+            <button onclick="formatDoc('formatBlock','H3')" class="touch-btn px-1.5 py-1 sm:px-2 sm:py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-700 dark:text-slate-300 font-semibold text-[10px] sm:text-sm flex-shrink-0" title="H3">H3</button>
+            <span class="w-px h-4 sm:h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 sm:mx-1 flex-shrink-0"></span>
+            
+            <button onclick="formatDoc('justifyLeft')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Izquierda"><i class="fas fa-align-left text-xs sm:text-sm"></i></button>
+            <button onclick="formatDoc('justifyCenter')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Centrar"><i class="fas fa-align-center text-xs sm:text-sm"></i></button>
+            <button onclick="formatDoc('justifyRight')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0 hidden sm:flex" title="Derecha"><i class="fas fa-align-right text-xs sm:text-sm"></i></button>
+            <button onclick="formatDoc('insertUnorderedList')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Viñetas"><i class="fas fa-list-ul text-xs sm:text-sm"></i></button>
+            <button onclick="formatDoc('insertOrderedList')" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Numerada"><i class="fas fa-list-ol text-xs sm:text-sm"></i></button>
+            <span class="w-px h-4 sm:h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 sm:mx-1 flex-shrink-0"></span>
+            
+            <button onclick="insertLink()" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Enlace"><i class="fas fa-link text-xs sm:text-sm"></i></button>
+            <label class="touch-btn cursor-pointer p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Imagen">
+                <i class="far fa-image text-xs sm:text-sm"></i>
+                <input type="file" accept="image/*" class="hidden" id="image-upload-input" onchange="handleImageUpload(event)">
+            </label>
+            <button onclick="toggleTableCreator()" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Tabla"><i class="fas fa-table text-xs sm:text-sm"></i></button>
+            <button onclick="insertPageBreak()" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 flex-shrink-0" title="Salto Página"><i class="fas fa-file-dashed-line text-xs sm:text-sm"></i><i class="fas fa-scissors text-[8px] sm:text-[10px] ml-0.5"></i></button>
+            <span class="w-px h-4 sm:h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 sm:mx-1 flex-shrink-0"></span>
+            
+            <button onclick="toggleDictation()" id="btn-dictation" class="touch-btn p-1.5 sm:p-2 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 rounded text-slate-600 dark:text-slate-400 transition-all flex-shrink-0" title="Dictado">
+                <i class="fas fa-microphone text-xs sm:text-sm"></i>
+            </button>
+            <button onclick="toggleReadAloud()" id="btn-read" class="touch-btn p-1.5 sm:p-2 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400 rounded text-slate-600 dark:text-slate-400 transition-all flex-shrink-0" title="Leer en voz alta">
+                <i class="fas fa-volume-up text-xs sm:text-sm"></i>
+            </button>
+            
+            <!-- Emoji -->
+            <div class="relative flex items-center flex-shrink-0">
+                <button onclick="toggleEmojiPicker()" id="emoji-btn" class="touch-btn p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400" title="Emojis">
+                    <i class="far fa-smile text-xs sm:text-sm"></i>
+                </button>
+                <div id="emoji-picker-container" class="hidden absolute top-full left-0 mt-2 z-[60] bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-1 sm:p-2">
                     <emoji-picker></emoji-picker>
                 </div>
             </div>
-
-            <!-- Botón Insertar Imagen -->
-            <label class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300 w-full md:w-auto flex items-center justify-center" title="Insertar Imagen desde archivo">
-                <i class="far fa-image"></i> <span class="md:hidden ml-2">Insertar Imagen</span>
-                <input type="file" accept="image/*" class="hidden" id="image-upload-input" onchange="handleImageUpload(event)">
-            </label>
-
-            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
             
-            <!-- Herramienta específica LinkedIn -->
-            <button onclick="formatLinkedIn()" class="p-2 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 rounded flex justify-center items-center gap-1 font-semibold text-sm w-full md:w-auto" title="Convertir selección a Negrita Unicode para LinkedIn">
-                <i class="fab fa-linkedin"></i> LN
+            <button onclick="formatLinkedIn()" class="touch-btn px-1.5 sm:px-2 py-1 sm:py-1.5 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 hover:bg-blue-100 font-semibold text-[10px] sm:text-xs rounded border border-blue-200 dark:border-blue-800 flex-shrink-0" title="Bold LinkedIn">
+                <i class="fab fa-linkedin"></i><span class="hidden sm:inline"> LN</span>
             </button>
+            
+            <!-- Color -->
+            <div class="flex items-center gap-0.5 flex-shrink-0">
+                <label class="touch-btn cursor-pointer p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400" title="Color de texto">
+                    <i class="fas fa-palette text-xs sm:text-sm"></i>
+                    <input type="color" id="text-color-picker" class="absolute opacity-0 w-0 h-0" onchange="formatDoc('foreColor', this.value)">
+                </label>
+                <label class="touch-btn cursor-pointer p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400" title="Color de fondo">
+                    <i class="fas fa-fill-drip text-xs sm:text-sm"></i>
+                    <input type="color" id="bg-color-picker" class="absolute opacity-0 w-0 h-0" value="#ffff00" onchange="formatDoc('hiliteColor', this.value)">
+                </label>
+            </div>
         </div>
 
-        <!-- Acciones de Archivo y Tema -->
-        <div class="flex flex-wrap gap-2 items-center ml-auto">
-            
-            <button onclick="toggleTheme()" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 transition-colors" title="Alternar Modo Oscuro">
-                <i class="fas fa-moon dark:hidden"></i>
-                <i class="fas fa-sun hidden dark:inline"></i>
-            </button>
-            
-            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1 hidden sm:block"></div>
-
-            <button onclick="createNewDocument()" class="px-2 md:px-3 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800 rounded text-sm font-medium flex items-center gap-2 transition-colors" title="Crear Documento Nuevo">
-                <i class="fas fa-file-alt"></i> <span class="hidden lg:inline">Nuevo</span>
-            </button>
-
-            <button onclick="toggleMode()" id="btn-mode" class="px-2 md:px-3 py-2 bg-gray-800 dark:bg-gray-600 text-white hover:bg-gray-700 dark:hover:bg-gray-500 rounded text-sm font-medium flex items-center gap-2 transition-colors">
-                <i class="fas fa-code"></i> <span class="hidden lg:inline">Código MD</span>
-            </button>
-            
-            <button onclick="downloadMD()" class="px-2 md:px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 transition-colors" title="Guardar como .md">
-                <i class="fas fa-download"></i> <span class="hidden sm:inline">MD</span>
+        <!-- Fila 2: Buscador y Exportar (móvil) -->
+        <div class="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 border-t border-slate-100 dark:border-slate-800">
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 sm:px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 flex-1 min-w-0">
+                <i class="fas fa-search text-[10px] sm:text-xs text-slate-400 flex-shrink-0"></i>
+                <input type="text" id="find-input" placeholder="Buscar..." class="bg-transparent border-none text-[10px] sm:text-xs w-full min-w-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 py-0.5 text-slate-700 dark:text-slate-200">
+            </div>
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 sm:px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 flex-1 min-w-0">
+                <i class="fas fa-exchange-alt text-[10px] sm:text-xs text-slate-400 flex-shrink-0"></i>
+                <input type="text" id="replace-input" placeholder="Reemplazar..." class="bg-transparent border-none text-[10px] sm:text-xs w-full min-w-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 py-0.5 text-slate-700 dark:text-slate-200">
+            </div>
+            <button onclick="findAndReplace()" class="touch-btn bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all flex-shrink-0">
+                <i class="fas fa-check mr-1"></i><span class="hidden sm:inline">Ir</span>
             </button>
 
-            <button onclick="exportPDF()" class="px-2 md:px-3 py-2 bg-red-600 text-white hover:bg-red-700 rounded text-sm font-medium flex items-center gap-2 shadow-sm transition-colors" title="Exportar a PDF">
-                <i class="fas fa-file-pdf"></i> <span class="hidden sm:inline">PDF</span>
+            <!-- Exportar en móvil -->
+            <div class="flex sm:hidden gap-1 flex-shrink-0">
+                <button onclick="downloadMD()" class="touch-btn px-2 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-[10px] font-bold text-slate-700 dark:text-slate-300 transition-colors">
+                    <i class="fas fa-file-code text-indigo-500"></i>
+                </button>
+                <button onclick="exportPDF()" class="touch-btn px-2 py-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-lg text-[10px] font-bold shadow-lg shadow-red-500/20 transition-all">
+                    <i class="fas fa-file-pdf"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL GENERADOR DE TABLAS ===== -->
+    <div id="table-creator-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-sm sm:text-base">
+                    <i class="fas fa-th text-blue-500"></i> Generador de Tabla
+                </h3>
+                <button onclick="toggleTableCreator()" class="touch-btn p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
+                <div>
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 mb-1">Filas</label>
+                    <input type="number" id="tbl-rows" min="1" max="20" value="3" class="touch-btn w-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 mb-1">Columnas</label>
+                    <input type="number" id="tbl-cols" min="1" max="10" value="3" class="touch-btn w-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm">
+                </div>
+            </div>
+            <div id="table-preview" class="mb-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                <table class="w-full border-collapse text-xs" id="preview-table"></table>
+            </div>
+            <button onclick="insertCustomTable()" class="touch-btn w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-md transition-all">
+                <i class="fas fa-plus mr-1"></i> Crear e Insertar Tabla
             </button>
         </div>
     </div>
 
-    <!-- Área de trabajo -->
-    <div class="flex-1 overflow-y-auto p-2 md:p-8 bg-gray-100 dark:bg-gray-900 transition-colors duration-300" id="scroll-area">
-        <div id="editor-container" class="bg-white dark:bg-gray-800 p-4 md:p-12 relative transition-colors duration-300 text-gray-800 dark:text-gray-200">
-            <!-- Editor visual (Estilo Word) -->
-            <div id="editor-rich" contenteditable="true" class="w-full h-full text-base leading-relaxed"></div>
-            
-            <!-- Editor Markdown (Código) -->
-            <textarea id="editor-md" class="w-full h-full hidden resize-none bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-mono text-sm p-4 border border-gray-200 dark:border-gray-700 rounded" spellcheck="false"></textarea>
-        </div>
+    <!-- ===== BARRA FLOTANTE PARA SELECCIÓN DE TEXTO ===== -->
+    <div id="floating-selection-toolbar" class="hidden fixed z-[60] bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-sm text-white p-1 rounded-lg shadow-xl flex items-center gap-0.5 transition-all text-xs">
+        <button onclick="formatDoc('bold')" class="touch-btn px-2 py-1 hover:bg-slate-700 rounded font-bold">B</button>
+        <button onclick="formatDoc('italic')" class="touch-btn px-2 py-1 hover:bg-slate-700 rounded italic">I</button>
+        <button onclick="formatDoc('underline')" class="touch-btn px-2 py-1 hover:bg-slate-700 rounded underline">U</button>
+        <button onclick="formatDoc('strikeThrough')" class="touch-btn px-2 py-1 hover:bg-slate-700 rounded line-through">S</button>
+        <div class="w-px h-4 bg-slate-600"></div>
+        <button onclick="formatDoc('formatBlock','H2')" class="touch-btn px-2 py-1 hover:bg-slate-700 rounded font-semibold">H2</button>
+        <button onclick="formatDoc('formatBlock','H3')" class="touch-btn px-2 py-1 hover:bg-slate-700 rounded font-semibold text-[10px]">H3</button>
+        <div class="w-px h-4 bg-slate-600"></div>
+        <button onclick="formatLinkedIn()" class="touch-btn px-2 py-1 hover:bg-slate-700 rounded text-blue-400 font-bold text-[10px]">LN</button>
     </div>
 
-    <!-- Barra de estado inferior (Contadores) -->
-    <div class="bg-gray-200 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700 p-1 px-4 flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 shrink-0">
-        <div id="save-status">
-            <i class="fas fa-check-circle text-green-600 dark:text-green-400 mr-1"></i> Guardado en navegador
-        </div>
-        <div id="word-count">
-            0 palabras | 0 caracteres
-        </div>
+    <!-- ===== OVERLAY SIDEBAR MÓVIL ===== -->
+    <div id="sidebar-overlay" class="sidebar-overlay fixed inset-0 z-[55] hidden lg:hidden" onclick="closeMobileSidebar()"></div>
+
+    <!-- ===== ÁREA PRINCIPAL ===== -->
+    <div class="flex flex-1 overflow-hidden relative">
+
+        <!-- Sidebar Izquierdo: Uso de transforms para mejor rendimiento móvil -->
+        <aside id="left-sidebar" class="w-56 sm:w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0 transition-transform duration-300 fixed lg:relative h-full z-[56] top-0 left-0 -translate-x-full lg:translate-x-0">
+            <div class="flex items-center justify-between p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 lg:border-0">
+                <h3 class="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">📄 Índice</h3>
+                <div class="flex items-center gap-1">
+                    <button onclick="refreshTOC()" class="touch-btn p-1.5 text-slate-400 hover:text-blue-500" title="Actualizar"><i class="fas fa-sync-alt text-xs"></i></button>
+                    <button onclick="closeMobileSidebar()" class="touch-btn lg:hidden p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><i class="fas fa-times text-xs"></i></button>
+                </div>
+            </div>
+            <div id="toc-list" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                <p class="text-xs italic text-slate-400">Escribe encabezados (H1, H2, H3) para verlos aquí.</p>
+            </div>
+            <!-- Estadísticas -->
+            <div class="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+                <h4 class="text-[10px] sm:text-xs font-bold text-slate-500 mb-2 uppercase">📊 Estadísticas</h4>
+                <div class="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
+                    <div class="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-800">
+                        <span class="block text-slate-400 text-[10px]">Palabras</span>
+                        <strong id="stat-words" class="text-slate-700 dark:text-slate-300 text-sm">0</strong>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-800">
+                        <span class="block text-slate-400 text-[10px]">Caracteres</span>
+                        <strong id="stat-chars" class="text-slate-700 dark:text-slate-300 text-sm">0</strong>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-800 col-span-2">
+                        <span class="block text-slate-400 text-[10px]">Tiempo de Lectura</span>
+                        <strong id="stat-read-time" class="text-slate-700 dark:text-slate-300 text-xs">0 min</strong>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Contenedor del Editor -->
+        <main class="flex-1 overflow-y-auto p-2 sm:p-6 md:p-10 bg-slate-100 dark:bg-slate-950 transition-colors duration-300" id="scroll-area">
+            <div id="editor-container" class="bg-white dark:bg-slate-900 p-6 sm:p-10 md:p-16 relative transition-colors duration-300 text-slate-800 dark:text-slate-200 rounded-none sm:rounded-xl">
+                <!-- Editor Visual -->
+                <div id="editor-rich" contenteditable="true" class="w-full h-full text-base leading-relaxed focus:outline-none"></div>
+                <!-- Editor Markdown -->
+                <textarea id="editor-md" class="w-full h-full hidden resize-none bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-mono text-xs sm:text-sm p-3 sm:p-4 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none" spellcheck="false"></textarea>
+            </div>
+        </main>
+
+        <!-- Sidebar de Preview (Split View) -->
+        <aside id="preview-sidebar" class="hidden md:w-1/2 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-8 overflow-y-auto">
+            <div class="flex items-center justify-between mb-4 sm:mb-6 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest"><i class="fas fa-eye text-blue-500 mr-1"></i> Live Preview</span>
+                <span class="text-[10px] sm:text-xs px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded">Solo Lectura</span>
+            </div>
+            <div id="live-preview" class="prose dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 text-sm sm:text-base"></div>
+        </aside>
+
     </div>
 
+    <!-- ===== FOOTER / BARRA DE ESTADO ===== -->
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-1.5 sm:p-2 px-3 sm:px-6 flex flex-wrap justify-between items-center text-[10px] sm:text-xs text-slate-500 shrink-0 gap-1" id="main-footer">
+        <div id="save-status" class="flex items-center gap-1 font-medium">
+            <i class="fas fa-check-circle text-emerald-500 text-[10px] sm:text-xs"></i> <span class="truncate">Guardado</span>
+        </div>
+        <div class="flex items-center gap-2 sm:gap-4 flex-wrap">
+            <span>Modo: <strong class="text-slate-700 dark:text-slate-300" id="current-mode-label">Visual</strong></span>
+            <span class="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+        </div>
+    </footer>
+
+    <!-- ===== JAVASCRIPT ===== -->
     <script>
-        // Variables globales
-        let isMarkdownMode = false;
+        let currentMode = 'visual';
+        let isZenMode = false;
         let saveTimeout;
+        let dictationActive = false;
+        let readingActive = false;
+        const speechSynth = window.speechSynthesis;
+        let recognition;
+
         const editorRich = document.getElementById('editor-rich');
         const editorMd = document.getElementById('editor-md');
-        const textTools = document.getElementById('text-tools');
-        const btnMode = document.getElementById('btn-mode');
-        const emojiContainer = document.getElementById('emoji-picker-container');
-        const emojiWrapper = document.getElementById('emoji-wrapper');
-        const wordCountDisplay = document.getElementById('word-count');
-        const saveStatusDisplay = document.getElementById('save-status');
-        let toastTimeout;
-        
-        // Configurar Turndown y activar plugin GFM para soportar tablas
+        const livePreview = document.getElementById('live-preview');
+        const previewSidebar = document.getElementById('preview-sidebar');
+        const mainToolbar = document.getElementById('main-toolbar');
+        const leftSidebar = document.getElementById('left-sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const tablePreview = document.getElementById('preview-table');
+
         const turndownService = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-', codeBlockStyle: 'fenced' });
         turndownService.use(window.turndownPluginGfm.gfm);
 
-        // INICIALIZACIÓN
         function init() {
-            if (localStorage.getItem('theme') === 'dark') {
+            // Aplicar tema inicial correcto
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
             }
-            const savedContent = localStorage.getItem('editorContent');
+
+            const savedContent = localStorage.getItem('editorContentPRO');
             if (savedContent) {
                 editorRich.innerHTML = savedContent;
             } else {
-                setInitialTemplate();
+                setTemplate('blank');
             }
+            editorRich.addEventListener('input', () => { triggerAutoSave(); refreshTOC(); });
+            editorMd.addEventListener('input', () => { triggerAutoSave(); refreshTOC(); updateSplitPreview(); });
+            setupFloatingSelectionToolbar();
             updateCounters();
-        }
+            refreshTOC();
+            updateTablePreview();
 
-        function setInitialTemplate() {
-            editorRich.innerHTML = '<h1>Documento Nuevo</h1><p>Empieza a escribir. Prueba a insertar un <a href="https://google.com">enlace</a>, arrastrar una imagen y redimensionarla, o exportar tu trabajo.</p>';
-        }
+            document.getElementById('tbl-rows').addEventListener('input', updateTablePreview);
+            document.getElementById('tbl-cols').addEventListener('input', updateTablePreview);
 
-        // AUTO-GUARDADO Y CONTADORES
-        function triggerAutoSave() {
-            saveStatusDisplay.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-1"></i> Guardando...';
-            clearTimeout(saveTimeout);
-            
-            saveTimeout = setTimeout(() => {
-                const contentToSave = isMarkdownMode ? marked.parse(editorMd.value) : editorRich.innerHTML;
-                try {
-                    localStorage.setItem('editorContent', contentToSave);
-                    saveStatusDisplay.innerHTML = '<i class="fas fa-check-circle text-green-600 dark:text-green-400 mr-1"></i> Guardado';
-                } catch (e) {
-                    if (e.name === 'QuotaExceededError') {
-                        showToast("Límite de almacenamiento local superado por imagen demasiado grande. No se guardará.", true);
-                        saveStatusDisplay.innerHTML = '<i class="fas fa-exclamation-triangle text-red-600 mr-1"></i> Error al guardar';
-                    }
+            document.addEventListener('click', (e) => {
+                const ep = document.getElementById('emoji-picker-container');
+                const btn = document.getElementById('emoji-btn');
+                if (!ep.contains(e.target) && !btn.contains(e.target)) {
+                    ep.classList.add('hidden');
                 }
-            }, 1000);
-            
-            updateCounters();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    showToast('Guardado manual completado');
+                    clearTimeout(saveTimeout);
+                    localStorage.setItem('editorContentPRO', editorRich.innerHTML);
+                }
+                if (e.key === 'Escape') {
+                    if (isZenMode) toggleZenMode();
+                    document.getElementById('table-creator-modal').classList.add('hidden');
+                    document.getElementById('emoji-picker-container').classList.add('hidden');
+                }
+            });
+
+            window.addEventListener('resize', handleResize);
         }
 
+        function handleResize() {
+            if (window.innerWidth >= 1024) closeMobileSidebar();
+            const ftb = document.getElementById('floating-selection-toolbar');
+            if (!ftb.classList.contains('hidden')) ftb.classList.add('hidden');
+        }
+
+        function toggleMobileSidebar() {
+            leftSidebar.classList.remove('-translate-x-full');
+            sidebarOverlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeMobileSidebar() {
+            leftSidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function toggleMobileToolbar() {
+            mainToolbar.classList.toggle('hidden');
+        }
+
+        const templates = {
+            blank: `<h1>Hoja en Blanco</h1><p>Empieza a escribir tu documento o utiliza las herramientas superiores para dar formato, insertar tablas, imágenes o aplicar herramientas de voz.</p>`,
+            cv: `<h1>Juan Pérez García - Desarrollador Senior</h1>
+                <p><strong>Email:</strong> juan.perez@example.com | <strong>LinkedIn:</strong> linkedin.com/in/juanperez | <strong>Tel:</strong> +34 600 000 000</p><hr>
+                <h2>Perfil Profesional</h2><p>Desarrollador Full Stack con más de 5 años de experiencia creando aplicaciones web escalables.</p>
+                <h2>Experiencia Laboral</h2><ul><li><strong>Ingeniero de Software en Tech Solutions (2020 - Presente)</strong>: Liderazgo del equipo frontend.</li><li><strong>Desarrollador Web Junior en StartWeb (2018 - 2020)</strong>: Creación de páginas corporativas y tiendas en línea.</li></ul>
+                <h2>Habilidades Clave</h2><table border="1"><thead><tr><th>Frontend</th><th>Backend</th><th>Herramientas</th></tr></thead><tbody><tr><td>HTML5, CSS3, React</td><td>Node.js, Express, Python</td><td>Git, Docker, AWS</td></tr></tbody></table>`,
+            notes: `<h1>Minuta de Reunión - Seguimiento de Proyecto</h1>
+                <p><strong>Fecha:</strong> 24 de Octubre de 2026 | <strong>Asistentes:</strong> Carlos, Ana, Luis</p>
+                <h2>1. Objetivos de la Reunión</h2><p>Revisar el estado actual del desarrollo de la plataforma PRO y definir los próximos pasos.</p>
+                <h2>2. Puntos Discutidos</h2><ul><li>El diseño del panel lateral está aprobado al 100%.</li><li>Falta integrar la API de reconocimiento de voz.</li></ul>
+                <h2>3. Tareas Asignadas</h2><table border="1"><thead><tr><th>Tarea</th><th>Responsable</th><th>Fecha Límite</th></tr></thead><tbody><tr><td>Implementar Web Speech API</td><td>Carlos</td><td>Mañana a las 14:00</td></tr><tr><td>Añadir Modales y Alertas</td><td>Ana</td><td>Fin de semana</td></tr></tbody></table>`,
+            readme: `<h1>Proyecto Editor Web PRO</h1><p>Bienvenido al repositorio oficial del Editor Web Multi-Formato.</p>
+                <h2>Características Principales</h2><ol><li>Soporte de Markdown y Texto Enriquecido.</li><li>Herramientas de voz (Dictado y Lectura).</li><li>Generador inteligente de tablas y plantillas.</li></ol>
+                <h2>Uso</h2><p>Abre el archivo <code>index.html</code> en tu navegador favorito para empezar.</p>`,
+            letter: `<h1>Carta Formal</h1>
+                <p style="text-align:right;"><strong>Ciudad de México, 24 de Octubre de 2026</strong></p><hr>
+                <p>Estimado/a [Nombre del destinatario]:</p>
+                <p>Por medio de la presente, me permito dirigirme a usted con el fin de [motivo de la carta].</p>
+                <p>[Cuerpo de la carta con los detalles necesarios.]</p>
+                <p>Sin otro particular por el momento, le envío un cordial saludo y quedo a sus órdenes para cualquier aclaración.</p><br>
+                <p>Atentamente,<br><strong>[Tu Nombre Completo]</strong><br>[Tu Cargo]<br>[Tu Empresa]</p>`
+        };
+
+        function setTemplate(key) {
+            if (templates[key]) {
+                editorRich.innerHTML = templates[key];
+                editorMd.value = turndownService.turndown(templates[key]);
+                updateCounters(); refreshTOC();
+            }
+        }
+        function loadSelectedTemplate() {
+            const selector = document.getElementById('template-selector');
+            const key = selector.value;
+            if (key) {
+                if (confirm("⚠️ ¿Cargar esta plantilla? Se sobrescribirá el contenido actual.")) {
+                    setTemplate(key);
+                    showToast("Plantilla cargada correctamente.");
+                }
+                selector.value = "blank";
+            }
+        }
+        function createNewDocument() {
+            if (confirm("⚠️ ¿Borrar todo y comenzar desde cero?")) {
+                setTemplate('blank');
+                localStorage.removeItem('editorContentPRO');
+                showToast("Lienzo reiniciado a hoja en blanco.");
+            }
+        }
+
+        function triggerAutoSave() {
+            const ssd = document.getElementById('save-status');
+            ssd.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-1"></i> <span class="truncate">Guardando...</span>';
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                const c = (currentMode === 'markdown') ? marked.parse(editorMd.value) : editorRich.innerHTML;
+                try {
+                    localStorage.setItem('editorContentPRO', c);
+                    ssd.innerHTML = '<i class="fas fa-check-circle text-emerald-500 mr-1"></i> <span class="truncate">Guardado</span>';
+                } catch(e) {
+                    showToast("Error de almacenamiento. Contenido muy grande.", true);
+                }
+            }, 800);
+            updateCounters();
+        }
         function updateCounters() {
-            const text = isMarkdownMode ? editorMd.value : editorRich.innerText || "";
+            const text = (currentMode === 'markdown') ? editorMd.value : (editorRich.innerText || "");
             const chars = text.length;
             const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-            wordCountDisplay.textContent = `${words} palabras | ${chars} caracteres`;
+            const readTime = Math.max(1, Math.ceil(words / 200));
+            document.getElementById('stat-words').textContent = words;
+            document.getElementById('stat-chars').textContent = chars;
+            document.getElementById('stat-read-time').textContent = `${readTime} min`;
         }
 
-        // Listener para detectar cambios del historial nativo (ctrl+z, etc)
-        editorRich.addEventListener('input', triggerAutoSave);
-        editorMd.addEventListener('input', triggerAutoSave);
-
-        // NUEVO DOCUMENTO
-        function createNewDocument() {
-            if (confirm("¿Estás seguro? Esto borrará el lienzo y el guardado automático actual. Esta acción no se puede deshacer.")) {
-                setInitialTemplate();
-                editorMd.value = '';
-                localStorage.removeItem('editorContent');
-                updateCounters();
-                showToast("Se ha creado un nuevo documento.");
-                if (isMarkdownMode) toggleMode(); // Volver al modo visual
-            }
-        }
-
-        // INSERTAR ENLACE
-        function insertLink() {
-            if (isMarkdownMode) { showToast("En modo código usa la sintaxis [texto](url)", true); return; }
-            const url = prompt("Introduce la URL del enlace:", "https://");
-            if (url) {
-                document.execCommand('createLink', false, url);
-                triggerAutoSave();
-            }
-        }
-
-        // LÓGICA DE INSERCIÓN DE IMÁGENES (DRAG & DROP Y BOTÓN)
-        function processAndInsertImage(file) {
-            if (isMarkdownMode) {
-                showToast("Por favor, pasa al modo Editor Visual para insertar imágenes.", true);
+        function refreshTOC() {
+            const lc = document.getElementById('toc-list');
+            lc.innerHTML = '';
+            const headings = editorRich.querySelectorAll('h1, h2, h3');
+            if (headings.length === 0) {
+                lc.innerHTML = '<p class="text-xs italic text-slate-400">Sin encabezados para mostrar.</p>';
                 return;
             }
+            headings.forEach((h, i) => {
+                if (!h.id) h.id = 'heading-' + i;
+                const link = document.createElement('a');
+                link.href = '#' + h.id;
+                link.textContent = h.innerText;
+                link.className = 'block hover:text-blue-500 truncate cursor-pointer transition-colors py-1';
+                if (h.tagName === 'H2') link.classList.add('ml-3', 'text-xs');
+                if (h.tagName === 'H3') link.classList.add('ml-6', 'text-xs', 'text-slate-400');
+                link.addEventListener('click', (e) => { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (window.innerWidth < 1024) closeMobileSidebar(); });
+                lc.appendChild(link);
+            });
+        }
+
+        function switchViewMode(mode) {
+            currentMode = mode;
+            const label = document.getElementById('current-mode-label');
+            ['btn-view-visual','btn-view-markdown','btn-view-split'].forEach(id => {
+                document.getElementById(id).className = "touch-btn px-2 sm:px-3 py-1.5 text-slate-600 dark:text-slate-400 rounded-md font-semibold text-[10px] sm:text-xs hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap";
+            });
+            if (mode === 'visual') {
+                editorRich.innerHTML = marked.parse(editorMd.value || editorRich.innerHTML);
+                editorRich.classList.remove('hidden'); editorMd.classList.add('hidden');
+                previewSidebar.classList.add('hidden');
+                document.getElementById('btn-view-visual').classList.add('bg-white','dark:bg-slate-700','text-blue-600','dark:text-blue-400','shadow-sm');
+                label.textContent = "Visual";
+            } else if (mode === 'markdown') {
+                editorMd.value = turndownService.turndown(editorRich.innerHTML);
+                editorRich.classList.add('hidden'); editorMd.classList.remove('hidden');
+                previewSidebar.classList.add('hidden');
+                document.getElementById('btn-view-markdown').classList.add('bg-white','dark:bg-slate-700','text-blue-600','dark:text-blue-400','shadow-sm');
+                label.textContent = "Markdown";
+            } else if (mode === 'split') {
+                editorMd.value = turndownService.turndown(editorRich.innerHTML);
+                editorRich.classList.add('hidden'); editorMd.classList.remove('hidden');
+                previewSidebar.classList.remove('hidden');
+                updateSplitPreview();
+                document.getElementById('btn-view-split').classList.add('bg-white','dark:bg-slate-700','text-blue-600','dark:text-blue-400','shadow-sm');
+                label.textContent = "Split";
+            }
+            refreshTOC();
+        }
+        
+        function updateSplitPreview() {
+            if (currentMode === 'split') livePreview.innerHTML = marked.parse(editorMd.value);
+        }
+
+        function toggleZenMode() {
+            isZenMode = !isZenMode;
+            document.body.classList.toggle('zen-mode', isZenMode);
+            showToast(isZenMode ? "🧘 Modo Enfoque activado." : "Modo Enfoque desactivado.");
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            showToast("Tema actualizado.");
+        }
+
+        function formatDoc(cmd, value = null) {
+            document.execCommand(cmd, false, value);
+            editorRich.focus();
+            triggerAutoSave();
+        }
+        
+        function insertLink() {
+            const url = prompt("URL del enlace:", "https://");
+            if (url) { document.execCommand('createLink', false, url); triggerAutoSave(); }
+        }
+
+        function processAndInsertImage(file) {
             if (file && file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = event => {
                     editorRich.focus();
-                    // Envolvemos la imagen en un DIV redimensionable mediante CSS
-                    const wrapperHTML = `<div class="resizable-image-wrapper" style="width: 300px;"><img src="${event.target.result}" alt="Imagen insertada"></div>&nbsp;`;
+                    const wrapperHTML = `<div class="resizable-image-wrapper" style="width: ${window.innerWidth < 768 ? '200px' : '280px'};"><img src="${event.target.result}" alt="Imagen"></div>&nbsp;`;
                     document.execCommand('insertHTML', false, wrapperHTML);
                     triggerAutoSave();
-                    showToast("Imagen insertada (arrastra la esquina inferior derecha para redimensionar)");
-                    if (window.innerWidth < 768) { 
-                        textTools.classList.add('hidden'); 
-                        textTools.classList.remove('flex'); 
-                    }
+                    showToast("Imagen insertada. Redimensiona desde la esquina inferior derecha.");
                 };
                 reader.readAsDataURL(file);
-            } else {
-                showToast("El archivo seleccionado no es una imagen válida.", true);
-            }
+            } else { showToast("Archivo no válido.", true); }
         }
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            processAndInsertImage(file);
-            event.target.value = ''; 
-        }
-
-        // Manejo de Drag & Drop
+        
+        function handleImageUpload(event) { processAndInsertImage(event.target.files[0]); event.target.value = ''; }
+        
         window.addEventListener('dragover', e => e.preventDefault());
         window.addEventListener('drop', e => e.preventDefault());
+        const editorArea = document.getElementById('editor-container');
+        editorArea.addEventListener('dragover', e => { e.preventDefault(); editorArea.style.opacity = '0.7'; });
+        editorArea.addEventListener('dragleave', e => { e.preventDefault(); editorArea.style.opacity = '1'; });
+        editorArea.addEventListener('drop', e => { e.preventDefault(); editorArea.style.opacity = '1'; processAndInsertImage(e.dataTransfer.files[0]); });
 
-        const editorContainer = document.getElementById('editor-container');
-        editorContainer.addEventListener('dragover', e => {
-            e.preventDefault();
-            editorContainer.style.opacity = '0.7';
-        });
-        editorContainer.addEventListener('dragleave', e => {
-            e.preventDefault();
-            editorContainer.style.opacity = '1';
-        });
-        editorContainer.addEventListener('drop', e => {
-            e.preventDefault();
-            editorContainer.style.opacity = '1';
-            const file = e.dataTransfer.files[0];
-            processAndInsertImage(file);
-        });
-
-        // TABLAS
-        function insertTable() {
-            if (isMarkdownMode) { showToast("Usa sintaxis Markdown para crear tablas en este modo.", true); return; }
-            
-            const tableHTML = `
-                <table border="1">
-                    <thead>
-                        <tr><th>Encabezado 1</th><th>Encabezado 2</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>Fila 1, Celda 1</td><td>Fila 1, Celda 2</td></tr>
-                        <tr><td>Fila 2, Celda 1</td><td>Fila 2, Celda 2</td></tr>
-                    </tbody>
-                </table><p><br></p>`;
-            
+        function toggleTableCreator() {
+            document.getElementById('table-creator-modal').classList.toggle('hidden');
+            updateTablePreview();
+        }
+        
+        function updateTablePreview() {
+            const rows = parseInt(document.getElementById('tbl-rows').value) || 3;
+            const cols = parseInt(document.getElementById('tbl-cols').value) || 3;
+            let html = '';
+            html += '<thead><tr class="bg-slate-200 dark:bg-slate-700">';
+            for (let c = 0; c < cols; c++) html += `<th class="border border-slate-300 dark:border-slate-600 p-1 text-[10px] text-slate-600 dark:text-slate-300">Col ${c+1}</th>`;
+            html += '</tr></thead><tbody>';
+            for (let r = 0; r < rows - 1; r++) {
+                html += '<tr>';
+                for (let c = 0; c < cols; c++) html += `<td class="border border-slate-300 dark:border-slate-600 p-1 text-[10px] text-slate-400">F${r+2},C${c+1}</td>`;
+                html += '</tr>';
+            }
+            html += '</tbody>';
+            tablePreview.innerHTML = html;
+        }
+        
+        function insertCustomTable() {
+            const rows = parseInt(document.getElementById('tbl-rows').value) || 3;
+            const cols = parseInt(document.getElementById('tbl-cols').value) || 3;
+            let html = `<table border="1"><thead><tr>`;
+            for (let c = 1; c <= cols; c++) html += `<th>Columna ${c}</th>`;
+            html += `</tr></thead><tbody>`;
+            for (let r = 1; r <= rows; r++) {
+                html += `<tr>`;
+                for (let c = 1; c <= cols; c++) html += `<td>Celda ${r},${c}</td>`;
+                html += `</tr>`;
+            }
+            html += `</tbody></table><p><br></p>`;
+            toggleTableCreator();
             editorRich.focus();
-            document.execCommand('insertHTML', false, tableHTML);
+            document.execCommand('insertHTML', false, html);
             triggerAutoSave();
-            showToast("Tabla insertada. Nota: No se pueden añadir filas/columnas automáticamente.");
+            showToast(`Tabla de ${rows}×${cols} insertada.`);
         }
-
-        // MODO OSCURO
-        function toggleTheme() {
-            const html = document.documentElement;
-            html.classList.toggle('dark');
-            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
-        }
-
-        // SALTO DE PÁGINA
+        
         function insertPageBreak() {
-            if (isMarkdownMode) { showToast("Usa modo visual para saltos de página.", true); return; }
-            const breakHTML = '<div class="html2pdf__page-break" contenteditable="false"></div><p><br></p>';
-            document.execCommand('insertHTML', false, breakHTML);
+            const bh = '<div class="html2pdf__page-break" contenteditable="false"></div><p><br></p>';
+            document.execCommand('insertHTML', false, bh);
             triggerAutoSave();
         }
 
-        // FUNCIONES DE INTERFAZ ANTERIORES
-        function toggleMobileMenu() {
-            textTools.classList.toggle('hidden');
-            textTools.classList.toggle('flex');
-            emojiContainer.classList.add('hidden'); 
-        }
-
-        function showToast(message, isError = false) {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-msg');
-            const icon = toast.querySelector('i');
-            toastMsg.textContent = message;
+        function setupFloatingSelectionToolbar() {
+            const toolbar = document.getElementById('floating-selection-toolbar');
             
-            if (isError) {
-                toast.classList.replace('bg-gray-800', 'bg-red-600');
-                toast.classList.replace('dark:bg-gray-700', 'dark:bg-red-700');
-                icon.className = 'fas fa-exclamation-triangle text-white';
-            } else {
-                toast.classList.replace('bg-red-600', 'bg-gray-800');
-                toast.classList.replace('dark:bg-red-700', 'dark:bg-gray-700');
-                icon.className = 'fas fa-info-circle text-blue-400';
-            }
-            toast.classList.remove('opacity-0', 'pointer-events-none');
-            toast.classList.add('opacity-100');
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0', 'pointer-events-none');
-            }, 3000);
-        }
-
-        function formatDoc(cmd, value = null) {
-            if (isMarkdownMode) { showToast("Herramientas visuales deshabilitadas en Markdown.", true); return; }
-            document.execCommand(cmd, false, value);
-            editorRich.focus();
-            triggerAutoSave();
-            if (window.innerWidth < 768) { textTools.classList.add('hidden'); textTools.classList.remove('flex'); }
-        }
-
-        function toggleEmojiPicker() { emojiContainer.classList.toggle('hidden'); }
-
-        document.querySelector('emoji-picker').addEventListener('emoji-click', event => {
-            const emoji = event.detail.unicode;
-            if (isMarkdownMode) {
-                const start = editorMd.selectionStart;
-                const end = editorMd.selectionEnd;
-                editorMd.value = editorMd.value.substring(0, start) + emoji + editorMd.value.substring(end);
-                editorMd.selectionStart = editorMd.selectionEnd = start + emoji.length;
-                editorMd.focus();
-            } else {
-                editorRich.focus();
-                document.execCommand('insertText', false, emoji);
-            }
-            emojiContainer.classList.add('hidden');
-            triggerAutoSave();
-            if (window.innerWidth < 768) { textTools.classList.add('hidden'); textTools.classList.remove('flex'); }
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!emojiWrapper.contains(e.target)) emojiContainer.classList.add('hidden');
-            const isClickInsideMenu = textTools.contains(e.target);
-            const isClickOnToggleBtn = e.target.closest('button[onclick="toggleMobileMenu()"]');
-            if (window.innerWidth < 768 && !isClickInsideMenu && !isClickOnToggleBtn && !textTools.classList.contains('hidden')) {
-                textTools.classList.add('hidden'); textTools.classList.remove('flex');
-            }
-        });
-
-        function toggleMode() {
-            isMarkdownMode = !isMarkdownMode;
-            emojiContainer.classList.add('hidden'); 
-            
-            if (isMarkdownMode) {
-                editorMd.value = turndownService.turndown(editorRich.innerHTML);
-                editorRich.classList.add('hidden'); editorMd.classList.remove('hidden');
-                Array.from(textTools.children).forEach(c => { if (c.id !== 'emoji-wrapper' && c.tagName !== 'DIV' && c.tagName !== 'LABEL') c.classList.add('opacity-30', 'pointer-events-none', 'grayscale'); });
-                btnMode.innerHTML = '<i class="fas fa-eye"></i> <span class="hidden lg:inline">Editor Visual</span>';
-                btnMode.classList.replace('bg-gray-800', 'bg-blue-600');
-            } else {
-                editorRich.innerHTML = marked.parse(editorMd.value);
-                editorMd.classList.add('hidden'); editorRich.classList.remove('hidden');
-                Array.from(textTools.children).forEach(c => c.classList.remove('opacity-30', 'pointer-events-none', 'grayscale'));
-                btnMode.innerHTML = '<i class="fas fa-code"></i> <span class="hidden lg:inline">Código MD</span>';
-                btnMode.classList.replace('bg-blue-600', 'bg-gray-800');
-            }
-            updateCounters();
-        }
-
-        function exportPDF() {
-            const wasMarkdown = isMarkdownMode;
-            if (wasMarkdown) toggleMode();
-
-            const htmlTag = document.documentElement;
-            const wasDark = htmlTag.classList.contains('dark');
-            if (wasDark) htmlTag.classList.remove('dark');
-
-            const element = document.getElementById('editor-rich');
-            const opt = {
-                margin:       [15, 15, 15, 15],
-                filename:     'documento.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            const handleSelection = () => {
+                // No mostrar en dispositivos táctiles para evitar conflictos con menús del SO
+                if (window.matchMedia("(pointer: coarse)").matches) return;
+                
+                const sel = window.getSelection();
+                if (sel.toString().trim().length > 0) {
+                    const rect = sel.getRangeAt(0).getBoundingClientRect();
+                    const tw = toolbar.offsetWidth || 280;
+                    let left = rect.left + (rect.width / 2) - (tw / 2) + window.scrollX;
+                    let top = rect.top + window.scrollY - 44;
+                    left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+                    top = Math.max(8, top);
+                    toolbar.style.left = `${left}px`;
+                    toolbar.style.top = `${top}px`;
+                    toolbar.classList.remove('hidden');
+                } else { 
+                    toolbar.classList.add('hidden'); 
+                }
             };
 
-            const btn = document.querySelector('button[onclick="exportPDF()"]');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="hidden sm:inline">Generando...</span>';
-            btn.classList.add('pointer-events-none', 'opacity-75');
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                btn.innerHTML = originalHTML;
-                btn.classList.remove('pointer-events-none', 'opacity-75');
-                if (wasDark) htmlTag.classList.add('dark'); 
-                if (wasMarkdown) toggleMode(); 
-                showToast("PDF descargado con éxito");
+            editorRich.addEventListener('mouseup', handleSelection);
+            
+            document.addEventListener('mousedown', e => { 
+                if (!toolbar.contains(e.target) && e.target !== editorRich) toolbar.classList.add('hidden'); 
             });
         }
 
-        function downloadMD() {
-            const contentToSave = isMarkdownMode ? editorMd.value : turndownService.turndown(editorRich.innerHTML);
-            const blob = new Blob([contentToSave], { type: 'text/markdown;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'documento.md';
-            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-            showToast("Archivo Markdown guardado");
+        function toggleDictation() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showToast("Tu navegador no soporta reconocimiento de voz.", true); return;
+            }
+            const btn = document.getElementById('btn-dictation');
+            if (dictationActive) {
+                if (recognition) recognition.stop();
+                dictationActive = false;
+                btn.classList.remove('recording-active', 'text-red-600');
+                showToast("Dictado detenido."); return;
+            }
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRec();
+            recognition.lang = 'es-ES';
+            recognition.interimResults = false;
+            recognition.continuous = true;
+            recognition.onstart = () => { dictationActive = true; btn.classList.add('recording-active', 'text-red-600'); showToast("🎙️ Escuchando... Habla ahora."); };
+            recognition.onresult = (event) => {
+                const transcript = event.results[event.results.length - 1][0].transcript;
+                if (currentMode === 'visual') { editorRich.focus(); document.execCommand('insertText', false, transcript + " "); }
+                else { const s = editorMd.selectionStart; editorMd.value = editorMd.value.substring(0, s) + transcript + " " + editorMd.value.substring(editorMd.selectionEnd); }
+                triggerAutoSave();
+            };
+            recognition.onerror = () => { dictationActive = false; btn.classList.remove('recording-active', 'text-red-600'); showToast("Error al capturar la voz.", true); };
+            recognition.start();
         }
 
-        // Formato LinkedIn
-        const linkedinBoldMap = { 'A':'𝗔', 'B':'𝗕', 'C':'𝗖', 'D':'𝗗', 'E':'𝗘', 'F':'𝗙', 'G':'𝗚', 'H':'𝗛', 'I':'𝗜', 'J':'𝗝', 'K':'𝗞', 'L':'𝗟', 'M':'𝗠', 'N':'𝗡', 'O':'𝗢', 'P':'𝗣', 'Q':'𝗤', 'R':'𝗥', 'S':'𝗦', 'T':'𝗧', 'U':'𝗨', 'V':'𝗩', 'W':'𝗪', 'X':'𝗫', 'Y':'𝗬', 'Z':'𝗭', 'a':'𝗮', 'b':'𝗯', 'c':'𝗰', 'd':'𝗱', 'e':'𝗲', 'f':'𝗳', 'g':'𝗴', 'h':'𝗵', 'i':'𝗶', 'j':'𝗷', 'k':'𝗸', 'l':'𝗹', 'm':'𝗺', 'n':'𝗻', 'o':'𝗼', 'p':'𝗽', 'q':'𝗾', 'r':'𝗿', 's':'𝘀', 't':'𝘁', 'u':'𝘂', 'v':'𝘃', 'w':'𝘄', 'x':'𝘅', 'y':'𝘆', 'z':'𝘇', '0':'𝟬', '1':'𝟭', '2':'𝟮', '3':'𝟯', '4':'𝟰', '5':'𝟱', '6':'𝟲', '7':'𝟟', '8':'𝟴', '9':'𝟵' };
-        function formatLinkedIn() {
-            if (isMarkdownMode) { showToast("Vuelve al modo visual.", true); return; }
-            const selection = window.getSelection();
-            if (!selection.rangeCount || selection.toString().length === 0) { showToast("Selecciona texto primero.", true); return; }
-            const convertedText = selection.toString().split('').map(c => linkedinBoldMap[c] || c).join('');
-            document.execCommand('insertText', false, convertedText);
+        function toggleReadAloud() {
+            const btn = document.getElementById('btn-read');
+            if (readingActive) { speechSynth.cancel(); readingActive = false; btn.classList.remove('text-blue-600', 'animate-pulse'); showToast("Lectura detenida."); return; }
+            const textToRead = editorRich.innerText;
+            if (!textToRead.trim()) { showToast("No hay texto para leer.", true); return; }
+            const utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.lang = 'es-ES';
+            utterance.onstart = () => { readingActive = true; btn.classList.add('text-blue-600', 'animate-pulse'); showToast("🔊 Leyendo documento en voz alta..."); };
+            utterance.onend = () => { readingActive = false; btn.classList.remove('text-blue-600', 'animate-pulse'); };
+            speechSynth.speak(utterance);
+        }
+
+        function findAndReplace() {
+            const findText = document.getElementById('find-input').value;
+            const replaceText = document.getElementById('replace-input').value;
+            if (!findText) { showToast("Introduce el texto a buscar.", true); return; }
+            let count = 0;
+            if (currentMode === 'visual') {
+                const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const matches = editorRich.innerText.match(regex);
+                count = matches ? matches.length : 0;
+                editorRich.innerHTML = editorRich.innerHTML.replace(regex, replaceText);
+            } else {
+                const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const matches = editorMd.value.match(regex);
+                count = matches ? matches.length : 0;
+                editorMd.value = editorMd.value.replace(regex, replaceText);
+            }
             triggerAutoSave();
-            showToast("Formato LinkedIn aplicado");
-            if (window.innerWidth < 768) { textTools.classList.add('hidden'); textTools.classList.remove('flex'); }
+            showToast(`${count} reemplazo(s) realizados para "${findText}".`);
         }
 
-        // Ejecutar inicialización
-        window.onload = init;
+        function exportPDF() {
+            const wasMarkdown = (currentMode === 'markdown');
+            if (wasMarkdown) switchViewMode('visual');
+            const htmlTag = document.documentElement;
+            const wasDark = htmlTag.classList.contains('dark');
+            if (wasDark) htmlTag.classList.remove('dark');
+            const element = document.getElementById('editor-rich');
+            const opt = {
+                margin: [15, 15, 15, 15], filename: 'Documento-Pro.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            showToast("Generando PDF, espera...", false);
+            html2pdf().set(opt).from(element).save().then(() => {
+                if (wasDark) htmlTag.classList.add('dark');
+                if (wasMarkdown) switchViewMode('markdown');
+                showToast("¡PDF exportado exitosamente!");
+            });
+        }
+        
+        function downloadMD() {
+            const content = (currentMode === 'markdown') ? editorMd.value : turndownService.turndown(editorRich.innerHTML);
+            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'Documento-Pro.md';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            showToast("Archivo Markdown descargado.");
+        }
 
+        const lnMap = {'A':'𝗔','B':'𝗕','C':'𝗖','D':'𝗗','E':'𝗘','F':'𝗙','G':'𝗚','H':'𝗛','I':'𝗜','J':'𝗝','K':'𝗞','L':'𝗟','M':'𝗠','N':'𝗡','O':'𝗢','P':'𝗣','Q':'𝗤','R':'𝗥','S':'𝗦','T':'𝗧','U':'𝗨','V':'𝗩','W':'𝗪','X':'𝗫','Y':'𝗬','Z':'𝗭','a':'𝗮','b':'𝗯','c':'𝗰','d':'𝗱','e':'𝗲','f':'𝗳','g':'𝗴','h':'𝗵','i':'𝗶','j':'𝗷','k':'𝗸','l':'𝗹','m':'𝗺','n':'𝗻','o':'𝗼','p':'𝗽','q':'𝗾','r':'𝗿','s':'𝘀','t':'𝘁','u':'𝘂','v':'𝘃','w':'𝘄','x':'𝘅','y':'𝘆','z':'𝘇','0':'𝟬','1':'𝟭','2':'𝟮','3':'𝟯','4':'𝟰','5':'𝟱','6':'𝟲','7':'𝟳','8':'𝟴','9':'𝟵'};
+        function formatLinkedIn() {
+            const sel = window.getSelection();
+            if (!sel.rangeCount || sel.toString().length === 0) { showToast("Selecciona texto primero.", true); return; }
+            document.execCommand('insertText', false, sel.toString().split('').map(c => lnMap[c] || c).join(''));
+            triggerAutoSave();
+            showToast("Formato Bold para LinkedIn aplicado.");
+        }
+
+        function toggleEmojiPicker() { document.getElementById('emoji-picker-container').classList.toggle('hidden'); }
+        
+        document.querySelector('emoji-picker').addEventListener('emoji-click', event => {
+            const emoji = event.detail.unicode;
+            if (currentMode === 'markdown') {
+                const s = editorMd.selectionStart;
+                editorMd.value = editorMd.value.substring(0, s) + emoji + editorMd.value.substring(editorMd.selectionEnd);
+                editorMd.selectionStart = editorMd.selectionEnd = s + emoji.length;
+                editorMd.focus();
+            } else { editorRich.focus(); document.execCommand('insertText', false, emoji); }
+            document.getElementById('emoji-picker-container').classList.add('hidden');
+            triggerAutoSave();
+        });
+
+        let toastTimer;
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toast-msg');
+            const icon = toast.querySelector('i');
+            msg.textContent = message;
+            if (isError) { toast.classList.replace('border-blue-500','border-red-500'); icon.className = 'fas fa-exclamation-triangle text-red-500 text-lg flex-shrink-0'; }
+            else { toast.classList.replace('border-red-500','border-blue-500'); icon.className = 'fas fa-info-circle text-blue-400 text-lg flex-shrink-0'; }
+            toast.classList.remove('opacity-0','pointer-events-none','translate-y-20');
+            toast.classList.add('opacity-100');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.classList.remove('opacity-100'); toast.classList.add('opacity-0','pointer-events-none','translate-y-20'); }, 3500);
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>

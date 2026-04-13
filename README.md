@@ -1,7 +1,7 @@
-Editor Web Multi-Formato PRO
+# Editor Web Multi-Formato PRO
 Un procesador de textos robusto y completamente autocontenido en un solo archivo HTML. No requiere servidor, base de datos ni instalación. Funciona directamente en el navegador y permite alternar fluidamente entre un editor visual (WYSIWYG) y código Markdown puro.
 
-🚀 Características Principales
+## 🚀 Características Principales
 100% Local y Privado: Todo el procesamiento y almacenamiento se realiza en tu navegador. Ningún dato viaja a servidores externos.
 
 Modo Dual: Escribe visualmente (estilo Word) o cambia al "Modo Código" para editar directamente la sintaxis Markdown.
@@ -20,7 +20,7 @@ Formato para LinkedIn: Convierte el texto seleccionado a fuentes Unicode "Negrit
 
 Selector de Emojis: Panel de emojis moderno e integrado.
 
-🛠️ Tecnologías y Librerías
+## 🛠️ Tecnologías y Librerías
 El proyecto está construido con HTML, JavaScript Vanilla y CSS, apoyándose en las siguientes librerías cargadas vía CDN:
 
 Tailwind CSS - Para el diseño responsivo y la interfaz de usuario.
@@ -37,7 +37,7 @@ Turndown GFM Plugin - Extensión para soportar tablas y otras características d
 
 emoji-picker-element - Web component ligero para la selección de emojis.
 
-💻 Instalación y Uso
+## 💻 Instalación y Uso
 No hay proceso de instalación.
 
 Descarga el archivo editor.html.
@@ -46,7 +46,7 @@ Haz doble clic sobre él para abrirlo en cualquier navegador web moderno (Chrome
 
 Empieza a escribir.
 
-⚠️ Limitaciones Técnicas Conocidas
+## ⚠️ Limitaciones Técnicas Conocidas
 Dado que esta aplicación es un experimento "Serverless" (sin backend) concentrado en un único archivo, existen limitaciones físicas impuestas por los navegadores:
 
 Límite de Almacenamiento (Imágenes): Las imágenes arrastradas se convierten a código Base64 para poder existir en el archivo. El auto-guardado usa localStorage, que tiene un límite estricto de ~5MB por dominio. Si insertas imágenes de muy alta resolución, alcanzarás este límite, el documento dejará de auto-guardarse y el sistema te alertará.
@@ -55,5 +55,5 @@ Edición de Tablas: Puedes insertar una tabla básica (2x2) y escribir en ella d
 
 Formateador LinkedIn (Accesibilidad): La herramienta "Negrita LN" usa caracteres matemáticos Unicode. Su uso excesivo puede ser perjudicial para usuarios que utilizan lectores de pantalla, por lo que se recomienda usarlo con moderación solo para títulos o palabras clave.
 
-🤝 Contribución
+## 🤝 Contribución
 Siéntete libre de bifurcar (fork) este proyecto y adaptar el código a tus necesidades. Al ser un archivo plano, es ideal para experimentar con las APIs nativas del navegador (document.execCommand, manipulación de la API Selection, etc.).

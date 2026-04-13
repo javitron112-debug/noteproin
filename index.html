@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Web Multi-Formato PRO</title>
+    
+    <!-- Configuración de Tailwind para Modo Oscuro por clase -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {} }
+        }
+    </script>
+
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Librerías para PDF, Markdown y Emojis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+    <!-- Plugin GFM para Turndown (necesario para convertir tablas HTML a Markdown) -->
+    <script src="https://unpkg.com/turndown-plugin-gfm/dist/turndown-plugin-gfm.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+
+    <style>
+        /* Estilos específicos para que el editor parezca una hoja de papel */
+        #editor-container {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            min-height: 297mm; /* Altura aproximada A4 */
+            width: 100%;
+            max-width: 210mm; /* Ancho máximo A4 */
+            margin: 0 auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        #editor-rich:focus, #editor-md:focus {
+            outline: none;
+        }
+
+        /* Estilos base dentro del editor rico para que el HTML luzca bien */
+        #editor-rich h1 { font-size: 2em; font-weight: bold; margin-bottom: 0.5em; }
+        #editor-rich h2 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; }
+        #editor-rich p { margin-bottom: 1em; }
+        #editor-rich ul { list-style-type: disc; margin-left: 2em; margin-bottom: 1em; }
+        #editor-rich ol { list-style-type: decimal; margin-left: 2em; margin-bottom: 1em; }
+        #editor-rich blockquote { border-left: 4px solid #ccc; padding-left: 1em; color: #666; font-style: italic; }
+        #editor-rich a { color: #2563eb; text-decoration: underline; }
+        html.dark #editor-rich a { color: #60a5fa; }
+        
+        /* Estilos para Tablas dentro del editor */
+        #editor-rich table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+        #editor-rich th, #editor-rich td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
+        #editor-rich th { background-color: #f3f4f6; font-weight: bold; }
+        html.dark #editor-rich th { background-color: #374151; }
+        html.dark #editor-rich th, html.dark #editor-rich td { border-color: #4b5563; }
+
+        /* Contenedor redimensionable para imágenes */
+        .resizable-image-wrapper {
+            resize: both;
+            overflow: hidden;
+            display: inline-block;
+            max-width: 100%;
+            min-width: 50px;
+            min-height: 50px;
+            border: 2px dashed transparent;
+            margin: 10px 0;
+            padding: 2px;
+            transition: border-color 0.2s;
+        }
+        .resizable-image-wrapper:hover, .resizable-image-wrapper:active {
+            border-color: #3b82f6; 
+        }
+        .resizable-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            pointer-events: none; 
+        }
+
+        /* Indicador visual de salto de página */
+        .html2pdf__page-break {
+            height: 0;
+            page-break-before: always;
+            margin: 30px 0;
+            border-top: 2px dashed #94a3b8;
+            position: relative;
+            display: block;
+        }
+        .html2pdf__page-break::after {
+            content: '--- Salto de Página (PDF) ---';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: inherit;
+            padding: 0 10px;
+            color: #94a3b8;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        /* Ajuste de estilos para el componente del emoji picker */
+        emoji-picker {
+            width: 100%;
+            max-width: 320px;
+            height: 350px;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+        }
+        
+        html.dark emoji-picker {
+            --background: #1f2937;
+            --border-color: #374151;
+            --color: #f3f4f6;
+        }
+        html.light emoji-picker {
+            --background: #ffffff;
+            --color: #1f2937;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 flex flex-col h-screen overflow-hidden text-gray-800 dark:text-gray-200 transition-colors duration-300 relative">
+
+    <!-- Notificaciones Toast -->
+    <div id="toast" class="fixed bottom-12 right-4 bg-gray-800 dark:bg-gray-700 text-white px-4 py-3 rounded shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
+        <i class="fas fa-info-circle text-blue-400"></i>
+        <span id="toast-msg">Mensaje</span>
+    </div>
+
+    <!-- Barra de herramientas superior (Sticky) -->
+    <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 p-2 flex flex-wrap gap-2 items-center justify-between shrink-0 z-40 shadow-sm transition-colors duration-300">
+        
+        <!-- Botón menú móvil -->
+        <button onclick="toggleMobileMenu()" class="md:hidden px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-200 font-medium flex items-center gap-2">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Herramientas de texto -->
+        <div class="hidden md:flex flex-wrap gap-1 items-center bg-white dark:bg-gray-800 md:bg-gray-50 md:dark:bg-gray-900 p-2 md:p-1 rounded-b-lg md:rounded border-x border-b md:border border-gray-200 dark:border-gray-700 absolute md:static top-full left-0 w-full md:w-auto shadow-xl md:shadow-none transition-colors" id="text-tools">
+            
+            <!-- Historial -->
+            <button onclick="formatDoc('undo')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Deshacer (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+            <button onclick="formatDoc('redo')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Rehacer (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+            
+            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
+
+            <!-- Formato básico -->
+            <button onclick="formatDoc('bold')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Negrita (Ctrl+B)"><i class="fas fa-bold"></i></button>
+            <button onclick="formatDoc('italic')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Cursiva (Ctrl+I)"><i class="fas fa-italic"></i></button>
+            <button onclick="formatDoc('underline')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Subrayado (Ctrl+U)"><i class="fas fa-underline"></i></button>
+            
+            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
+            
+            <!-- Estructura y Enlaces -->
+            <button onclick="formatDoc('formatBlock', 'H1')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-bold" title="Título 1">H1</button>
+            <button onclick="formatDoc('formatBlock', 'H2')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-bold" title="Título 2">H2</button>
+            <button onclick="insertLink()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Insertar Enlace"><i class="fas fa-link"></i></button>
+            
+            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
+            
+            <!-- Alineación y Listas -->
+            <button onclick="formatDoc('justifyLeft')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Alinear a la Izquierda"><i class="fas fa-align-left"></i></button>
+            <button onclick="formatDoc('justifyCenter')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Centrar"><i class="fas fa-align-center"></i></button>
+            <button onclick="formatDoc('insertUnorderedList')" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Lista viñetas"><i class="fas fa-list-ul"></i></button>
+            
+            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
+
+            <!-- Tablas e Inserciones -->
+            <button onclick="insertTable()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Insertar Tabla (2x2)"><i class="fas fa-table"></i></button>
+            <button onclick="insertPageBreak()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300" title="Insertar Salto de Página (Para PDF)"><i class="fas fa-file-dashed-line text-sm"></i><i class="fas fa-scissors"></i></button>
+
+            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
+
+            <!-- Selector de Emojis -->
+            <div class="relative inline-block w-full md:w-auto text-center md:text-left" id="emoji-wrapper">
+                <button onclick="toggleEmojiPicker()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300 w-full md:w-auto flex items-center justify-center" title="Insertar Emoji">
+                    <i class="far fa-smile"></i> <span class="md:hidden ml-2">Insertar Emoji</span>
+                </button>
+                <div id="emoji-picker-container" class="hidden absolute top-full md:left-0 right-0 md:right-auto mt-1 z-50 shadow-2xl rounded-lg bg-white dark:bg-gray-800 p-2">
+                    <emoji-picker></emoji-picker>
+                </div>
+            </div>
+
+            <!-- Botón Insertar Imagen -->
+            <label class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300 w-full md:w-auto flex items-center justify-center" title="Insertar Imagen desde archivo">
+                <i class="far fa-image"></i> <span class="md:hidden ml-2">Insertar Imagen</span>
+                <input type="file" accept="image/*" class="hidden" id="image-upload-input" onchange="handleImageUpload(event)">
+            </label>
+
+            <div class="w-full md:w-px h-px md:h-6 bg-gray-300 dark:bg-gray-600 my-1 md:my-0 md:mx-1"></div>
+            
+            <!-- Herramienta específica LinkedIn -->
+            <button onclick="formatLinkedIn()" class="p-2 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 rounded flex justify-center items-center gap-1 font-semibold text-sm w-full md:w-auto" title="Convertir selección a Negrita Unicode para LinkedIn">
+                <i class="fab fa-linkedin"></i> LN
+            </button>
+        </div>
+
+        <!-- Acciones de Archivo y Tema -->
+        <div class="flex flex-wrap gap-2 items-center ml-auto">
+            
+            <button onclick="toggleTheme()" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 transition-colors" title="Alternar Modo Oscuro">
+                <i class="fas fa-moon dark:hidden"></i>
+                <i class="fas fa-sun hidden dark:inline"></i>
+            </button>
+            
+            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1 hidden sm:block"></div>
+
+            <button onclick="createNewDocument()" class="px-2 md:px-3 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800 rounded text-sm font-medium flex items-center gap-2 transition-colors" title="Crear Documento Nuevo">
+                <i class="fas fa-file-alt"></i> <span class="hidden lg:inline">Nuevo</span>
+            </button>
+
+            <button onclick="toggleMode()" id="btn-mode" class="px-2 md:px-3 py-2 bg-gray-800 dark:bg-gray-600 text-white hover:bg-gray-700 dark:hover:bg-gray-500 rounded text-sm font-medium flex items-center gap-2 transition-colors">
+                <i class="fas fa-code"></i> <span class="hidden lg:inline">Código MD</span>
+            </button>
+            
+            <button onclick="downloadMD()" class="px-2 md:px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 transition-colors" title="Guardar como .md">
+                <i class="fas fa-download"></i> <span class="hidden sm:inline">MD</span>
+            </button>
+
+            <button onclick="exportPDF()" class="px-2 md:px-3 py-2 bg-red-600 text-white hover:bg-red-700 rounded text-sm font-medium flex items-center gap-2 shadow-sm transition-colors" title="Exportar a PDF">
+                <i class="fas fa-file-pdf"></i> <span class="hidden sm:inline">PDF</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Área de trabajo -->
+    <div class="flex-1 overflow-y-auto p-2 md:p-8 bg-gray-100 dark:bg-gray-900 transition-colors duration-300" id="scroll-area">
+        <div id="editor-container" class="bg-white dark:bg-gray-800 p-4 md:p-12 relative transition-colors duration-300 text-gray-800 dark:text-gray-200">
+            <!-- Editor visual (Estilo Word) -->
+            <div id="editor-rich" contenteditable="true" class="w-full h-full text-base leading-relaxed"></div>
+            
+            <!-- Editor Markdown (Código) -->
+            <textarea id="editor-md" class="w-full h-full hidden resize-none bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-mono text-sm p-4 border border-gray-200 dark:border-gray-700 rounded" spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <!-- Barra de estado inferior (Contadores) -->
+    <div class="bg-gray-200 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700 p-1 px-4 flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 shrink-0">
+        <div id="save-status">
+            <i class="fas fa-check-circle text-green-600 dark:text-green-400 mr-1"></i> Guardado en navegador
+        </div>
+        <div id="word-count">
+            0 palabras | 0 caracteres
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let isMarkdownMode = false;
+        let saveTimeout;
+        const editorRich = document.getElementById('editor-rich');
+        const editorMd = document.getElementById('editor-md');
+        const textTools = document.getElementById('text-tools');
+        const btnMode = document.getElementById('btn-mode');
+        const emojiContainer = document.getElementById('emoji-picker-container');
+        const emojiWrapper = document.getElementById('emoji-wrapper');
+        const wordCountDisplay = document.getElementById('word-count');
+        const saveStatusDisplay = document.getElementById('save-status');
+        let toastTimeout;
+        
+        // Configurar Turndown y activar plugin GFM para soportar tablas
+        const turndownService = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-', codeBlockStyle: 'fenced' });
+        turndownService.use(window.turndownPluginGfm.gfm);
+
+        // INICIALIZACIÓN
+        function init() {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+            const savedContent = localStorage.getItem('editorContent');
+            if (savedContent) {
+                editorRich.innerHTML = savedContent;
+            } else {
+                setInitialTemplate();
+            }
+            updateCounters();
+        }
+
+        function setInitialTemplate() {
+            editorRich.innerHTML = '<h1>Documento Nuevo</h1><p>Empieza a escribir. Prueba a insertar un <a href="https://google.com">enlace</a>, arrastrar una imagen y redimensionarla, o exportar tu trabajo.</p>';
+        }
+
+        // AUTO-GUARDADO Y CONTADORES
+        function triggerAutoSave() {
+            saveStatusDisplay.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-1"></i> Guardando...';
+            clearTimeout(saveTimeout);
+            
+            saveTimeout = setTimeout(() => {
+                const contentToSave = isMarkdownMode ? marked.parse(editorMd.value) : editorRich.innerHTML;
+                try {
+                    localStorage.setItem('editorContent', contentToSave);
+                    saveStatusDisplay.innerHTML = '<i class="fas fa-check-circle text-green-600 dark:text-green-400 mr-1"></i> Guardado';
+                } catch (e) {
+                    if (e.name === 'QuotaExceededError') {
+                        showToast("Límite de almacenamiento local superado por imagen demasiado grande. No se guardará.", true);
+                        saveStatusDisplay.innerHTML = '<i class="fas fa-exclamation-triangle text-red-600 mr-1"></i> Error al guardar';
+                    }
+                }
+            }, 1000);
+            
+            updateCounters();
+        }
+
+        function updateCounters() {
+            const text = isMarkdownMode ? editorMd.value : editorRich.innerText || "";
+            const chars = text.length;
+            const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+            wordCountDisplay.textContent = `${words} palabras | ${chars} caracteres`;
+        }
+
+        // Listener para detectar cambios del historial nativo (ctrl+z, etc)
+        editorRich.addEventListener('input', triggerAutoSave);
+        editorMd.addEventListener('input', triggerAutoSave);
+
+        // NUEVO DOCUMENTO
+        function createNewDocument() {
+            if (confirm("¿Estás seguro? Esto borrará el lienzo y el guardado automático actual. Esta acción no se puede deshacer.")) {
+                setInitialTemplate();
+                editorMd.value = '';
+                localStorage.removeItem('editorContent');
+                updateCounters();
+                showToast("Se ha creado un nuevo documento.");
+                if (isMarkdownMode) toggleMode(); // Volver al modo visual
+            }
+        }
+
+        // INSERTAR ENLACE
+        function insertLink() {
+            if (isMarkdownMode) { showToast("En modo código usa la sintaxis [texto](url)", true); return; }
+            const url = prompt("Introduce la URL del enlace:", "https://");
+            if (url) {
+                document.execCommand('createLink', false, url);
+                triggerAutoSave();
+            }
+        }
+
+        // LÓGICA DE INSERCIÓN DE IMÁGENES (DRAG & DROP Y BOTÓN)
+        function processAndInsertImage(file) {
+            if (isMarkdownMode) {
+                showToast("Por favor, pasa al modo Editor Visual para insertar imágenes.", true);
+                return;
+            }
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = event => {
+                    editorRich.focus();
+                    // Envolvemos la imagen en un DIV redimensionable mediante CSS
+                    const wrapperHTML = `<div class="resizable-image-wrapper" style="width: 300px;"><img src="${event.target.result}" alt="Imagen insertada"></div>&nbsp;`;
+                    document.execCommand('insertHTML', false, wrapperHTML);
+                    triggerAutoSave();
+                    showToast("Imagen insertada (arrastra la esquina inferior derecha para redimensionar)");
+                    if (window.innerWidth < 768) { 
+                        textTools.classList.add('hidden'); 
+                        textTools.classList.remove('flex'); 
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                showToast("El archivo seleccionado no es una imagen válida.", true);
+            }
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            processAndInsertImage(file);
+            event.target.value = ''; 
+        }
+
+        // Manejo de Drag & Drop
+        window.addEventListener('dragover', e => e.preventDefault());
+        window.addEventListener('drop', e => e.preventDefault());
+
+        const editorContainer = document.getElementById('editor-container');
+        editorContainer.addEventListener('dragover', e => {
+            e.preventDefault();
+            editorContainer.style.opacity = '0.7';
+        });
+        editorContainer.addEventListener('dragleave', e => {
+            e.preventDefault();
+            editorContainer.style.opacity = '1';
+        });
+        editorContainer.addEventListener('drop', e => {
+            e.preventDefault();
+            editorContainer.style.opacity = '1';
+            const file = e.dataTransfer.files[0];
+            processAndInsertImage(file);
+        });
+
+        // TABLAS
+        function insertTable() {
+            if (isMarkdownMode) { showToast("Usa sintaxis Markdown para crear tablas en este modo.", true); return; }
+            
+            const tableHTML = `
+                <table border="1">
+                    <thead>
+                        <tr><th>Encabezado 1</th><th>Encabezado 2</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Fila 1, Celda 1</td><td>Fila 1, Celda 2</td></tr>
+                        <tr><td>Fila 2, Celda 1</td><td>Fila 2, Celda 2</td></tr>
+                    </tbody>
+                </table><p><br></p>`;
+            
+            editorRich.focus();
+            document.execCommand('insertHTML', false, tableHTML);
+            triggerAutoSave();
+            showToast("Tabla insertada. Nota: No se pueden añadir filas/columnas automáticamente.");
+        }
+
+        // MODO OSCURO
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        }
+
+        // SALTO DE PÁGINA
+        function insertPageBreak() {
+            if (isMarkdownMode) { showToast("Usa modo visual para saltos de página.", true); return; }
+            const breakHTML = '<div class="html2pdf__page-break" contenteditable="false"></div><p><br></p>';
+            document.execCommand('insertHTML', false, breakHTML);
+            triggerAutoSave();
+        }
+
+        // FUNCIONES DE INTERFAZ ANTERIORES
+        function toggleMobileMenu() {
+            textTools.classList.toggle('hidden');
+            textTools.classList.toggle('flex');
+            emojiContainer.classList.add('hidden'); 
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const icon = toast.querySelector('i');
+            toastMsg.textContent = message;
+            
+            if (isError) {
+                toast.classList.replace('bg-gray-800', 'bg-red-600');
+                toast.classList.replace('dark:bg-gray-700', 'dark:bg-red-700');
+                icon.className = 'fas fa-exclamation-triangle text-white';
+            } else {
+                toast.classList.replace('bg-red-600', 'bg-gray-800');
+                toast.classList.replace('dark:bg-red-700', 'dark:bg-gray-700');
+                icon.className = 'fas fa-info-circle text-blue-400';
+            }
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function formatDoc(cmd, value = null) {
+            if (isMarkdownMode) { showToast("Herramientas visuales deshabilitadas en Markdown.", true); return; }
+            document.execCommand(cmd, false, value);
+            editorRich.focus();
+            triggerAutoSave();
+            if (window.innerWidth < 768) { textTools.classList.add('hidden'); textTools.classList.remove('flex'); }
+        }
+
+        function toggleEmojiPicker() { emojiContainer.classList.toggle('hidden'); }
+
+        document.querySelector('emoji-picker').addEventListener('emoji-click', event => {
+            const emoji = event.detail.unicode;
+            if (isMarkdownMode) {
+                const start = editorMd.selectionStart;
+                const end = editorMd.selectionEnd;
+                editorMd.value = editorMd.value.substring(0, start) + emoji + editorMd.value.substring(end);
+                editorMd.selectionStart = editorMd.selectionEnd = start + emoji.length;
+                editorMd.focus();
+            } else {
+                editorRich.focus();
+                document.execCommand('insertText', false, emoji);
+            }
+            emojiContainer.classList.add('hidden');
+            triggerAutoSave();
+            if (window.innerWidth < 768) { textTools.classList.add('hidden'); textTools.classList.remove('flex'); }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!emojiWrapper.contains(e.target)) emojiContainer.classList.add('hidden');
+            const isClickInsideMenu = textTools.contains(e.target);
+            const isClickOnToggleBtn = e.target.closest('button[onclick="toggleMobileMenu()"]');
+            if (window.innerWidth < 768 && !isClickInsideMenu && !isClickOnToggleBtn && !textTools.classList.contains('hidden')) {
+                textTools.classList.add('hidden'); textTools.classList.remove('flex');
+            }
+        });
+
+        function toggleMode() {
+            isMarkdownMode = !isMarkdownMode;
+            emojiContainer.classList.add('hidden'); 
+            
+            if (isMarkdownMode) {
+                editorMd.value = turndownService.turndown(editorRich.innerHTML);
+                editorRich.classList.add('hidden'); editorMd.classList.remove('hidden');
+                Array.from(textTools.children).forEach(c => { if (c.id !== 'emoji-wrapper' && c.tagName !== 'DIV' && c.tagName !== 'LABEL') c.classList.add('opacity-30', 'pointer-events-none', 'grayscale'); });
+                btnMode.innerHTML = '<i class="fas fa-eye"></i> <span class="hidden lg:inline">Editor Visual</span>';
+                btnMode.classList.replace('bg-gray-800', 'bg-blue-600');
+            } else {
+                editorRich.innerHTML = marked.parse(editorMd.value);
+                editorMd.classList.add('hidden'); editorRich.classList.remove('hidden');
+                Array.from(textTools.children).forEach(c => c.classList.remove('opacity-30', 'pointer-events-none', 'grayscale'));
+                btnMode.innerHTML = '<i class="fas fa-code"></i> <span class="hidden lg:inline">Código MD</span>';
+                btnMode.classList.replace('bg-blue-600', 'bg-gray-800');
+            }
+            updateCounters();
+        }
+
+        function exportPDF() {
+            const wasMarkdown = isMarkdownMode;
+            if (wasMarkdown) toggleMode();
+
+            const htmlTag = document.documentElement;
+            const wasDark = htmlTag.classList.contains('dark');
+            if (wasDark) htmlTag.classList.remove('dark');
+
+            const element = document.getElementById('editor-rich');
+            const opt = {
+                margin:       [15, 15, 15, 15],
+                filename:     'documento.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            const btn = document.querySelector('button[onclick="exportPDF()"]');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="hidden sm:inline">Generando...</span>';
+            btn.classList.add('pointer-events-none', 'opacity-75');
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('pointer-events-none', 'opacity-75');
+                if (wasDark) htmlTag.classList.add('dark'); 
+                if (wasMarkdown) toggleMode(); 
+                showToast("PDF descargado con éxito");
+            });
+        }
+
+        function downloadMD() {
+            const contentToSave = isMarkdownMode ? editorMd.value : turndownService.turndown(editorRich.innerHTML);
+            const blob = new Blob([contentToSave], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'documento.md';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            showToast("Archivo Markdown guardado");
+        }
+
+        // Formato LinkedIn
+        const linkedinBoldMap = { 'A':'𝗔', 'B':'𝗕', 'C':'𝗖', 'D':'𝗗', 'E':'𝗘', 'F':'𝗙', 'G':'𝗚', 'H':'𝗛', 'I':'𝗜', 'J':'𝗝', 'K':'𝗞', 'L':'𝗟', 'M':'𝗠', 'N':'𝗡', 'O':'𝗢', 'P':'𝗣', 'Q':'𝗤', 'R':'𝗥', 'S':'𝗦', 'T':'𝗧', 'U':'𝗨', 'V':'𝗩', 'W':'𝗪', 'X':'𝗫', 'Y':'𝗬', 'Z':'𝗭', 'a':'𝗮', 'b':'𝗯', 'c':'𝗰', 'd':'𝗱', 'e':'𝗲', 'f':'𝗳', 'g':'𝗴', 'h':'𝗵', 'i':'𝗶', 'j':'𝗷', 'k':'𝗸', 'l':'𝗹', 'm':'𝗺', 'n':'𝗻', 'o':'𝗼', 'p':'𝗽', 'q':'𝗾', 'r':'𝗿', 's':'𝘀', 't':'𝘁', 'u':'𝘂', 'v':'𝘃', 'w':'𝘄', 'x':'𝘅', 'y':'𝘆', 'z':'𝘇', '0':'𝟬', '1':'𝟭', '2':'𝟮', '3':'𝟯', '4':'𝟰', '5':'𝟱', '6':'𝟲', '7':'𝟟', '8':'𝟴', '9':'𝟵' };
+        function formatLinkedIn() {
+            if (isMarkdownMode) { showToast("Vuelve al modo visual.", true); return; }
+            const selection = window.getSelection();
+            if (!selection.rangeCount || selection.toString().length === 0) { showToast("Selecciona texto primero.", true); return; }
+            const convertedText = selection.toString().split('').map(c => linkedinBoldMap[c] || c).join('');
+            document.execCommand('insertText', false, convertedText);
+            triggerAutoSave();
+            showToast("Formato LinkedIn aplicado");
+            if (window.innerWidth < 768) { textTools.classList.add('hidden'); textTools.classList.remove('flex'); }
+        }
+
+        // Ejecutar inicialización
+        window.onload = init;
+
+    </script>
+</body>
+</html>
